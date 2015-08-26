@@ -326,7 +326,13 @@ static void show_tcpsort_win(WINDOW ** win, PANEL ** panel)
 	wmove(*win, 5, 2);
 	tx_printkeyhelp("B", " - sort by byte count", *win, DLGHIGHATTR,
 			DLGTEXTATTR);
-	wmove(*win, 6, 2);
+        wmove(*win, 6, 2);
+        tx_printkeyhelp("S", " - sort by Source", *win, DLGHIGHATTR,
+                        DLGTEXTATTR);
+        wmove(*win, 7, 2);
+        tx_printkeyhelp("D", " - sort by Destination", *win, DLGHIGHATTR,
+                        DLGTEXTATTR);
+	wmove(*win, 8, 2);
 	tx_printkeyhelp("Any other key", " - cancel sort", *win, DLGHIGHATTR,
 			DLGTEXTATTR);
 	update_panels();
@@ -384,7 +390,32 @@ static void swap_tcp_entries(struct tcptable *table, struct tcptableent *p1,
 static unsigned long long qt_getkey(struct tcptableent *entry, int ch)
 {
 	if (ch == 'B')
-		return (max(entry->bcount, entry->oth_connection->bcount));
+	  return (max(entry->bcount, entry->oth_connection->bcount));
+	if (ch == 'S')
+	  switch (entry->saddr.ss_family) {
+	    case AF_INET: {
+	      struct sockaddr_in *sa = (struct sockaddr_in *)&(entry->saddr);
+	      return sa->sin_addr.s_addr;
+	    }
+	  case AF_INET6: {
+	    struct sockaddr_in6 *sa = (struct sockaddr_in6 *)&(entry->saddr);
+	    return (uint32_t)*(sa->sin6_addr.s6_addr);
+	    }
+	  }
+	if (ch == 'D')
+	  switch (entry->saddr.ss_family) {
+	    case AF_INET: {
+	      struct sockaddr_in *sa = (struct sockaddr_in *)&(entry->daddr);
+	      return sa->sin_addr.s_addr;
+	    }
+	    case AF_INET6: {
+	      struct sockaddr_in6 *sa = (struct sockaddr_in6 *)&(entry->daddr);
+	      return (uint32_t)*(sa->sin6_addr.s6_addr);
+
+	    }
+	  }
+
+
 
 	return (max(entry->pcount, entry->oth_connection->pcount));
 }
@@ -445,7 +476,6 @@ static void quicksort_tcp_entries(struct tcptable *table,
 				  struct tcptableent *high, int ch)
 {
 	struct tcptableent *pivot;
-
 	if ((high == NULL) || (low == NULL))
 		return;
 
@@ -475,7 +505,7 @@ static void sortipents(struct tcptable *table, int ch)
 
 	ch = toupper(ch);
 
-	if ((ch != 'P') && (ch != 'B'))
+	if ((ch != 'P') && (ch != 'B')&& (ch != 'S')&& (ch != 'D'))
 		return;
 
 	quicksort_tcp_entries(table, table->head, table->tail->prev_entry, ch);
